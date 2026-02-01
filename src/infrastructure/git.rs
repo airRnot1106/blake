@@ -121,9 +121,14 @@ impl GitGateway for Git2Gateway {
         let author = sig.name().unwrap_or("Unknown").to_string();
         let timestamp = sig.when().seconds();
         let message = commit_obj.message().unwrap_or("").to_string();
+        let parent = commit_obj
+            .parent(0)
+            .ok()
+            .map(|p| CommitHash::new(p.id().to_string()));
 
         Ok(CommitInfo {
             hash: CommitHash::new(commit_obj.id().to_string()),
+            parent,
             author,
             timestamp,
             message,

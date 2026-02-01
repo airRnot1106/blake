@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitInfo {
     pub hash: CommitHash,
+    pub parent: Option<CommitHash>,
     pub author: String,
     pub timestamp: i64,
     pub message: String,
