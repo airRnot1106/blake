@@ -10,3 +10,17 @@ impl Diff {
         &self.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn new_and_as_str_roundtrip(s in "(?s).{0,1000}") {
+            let diff = Diff::new(&s);
+            prop_assert_eq!(diff.as_str(), s);
+        }
+    }
+}
