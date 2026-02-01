@@ -22,6 +22,10 @@ impl CommitHash {
     pub fn short(&self) -> &str {
         &self.0[..7.min(self.0.len())]
     }
+
+    pub fn head() -> Self {
+        Self("HEAD".to_string())
+    }
 }
 
 impl fmt::Display for CommitHash {
