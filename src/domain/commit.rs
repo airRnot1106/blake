@@ -41,3 +41,35 @@ impl From<String> for CommitHash {
         Self::new(s)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn short_is_at_most_7_chars(s in "[0-9a-f]{40}") {
+            let hash = CommitHash::new(&s);
+            prop_assert!(hash.short().len() <= 7);
+        }
+
+        #[test]
+        fn short_is_prefix_of_original(s in "[0-9a-f]{40}") {
+            let hash = CommitHash::new(&s);
+            prop_assert!(hash.as_str().starts_with(hash.short()));
+        }
+
+        #[test]
+        fn display_equals_original(s in "[0-9a-f]{40}") {
+            let hash = CommitHash::new(&s);
+            prop_assert_eq!(format!("{}", hash), hash.as_str());
+        }
+
+        #[test]
+        fn from_str_roundtrip(s in "[0-9a-f]{40}") {
+            let hash: CommitHash = s.as_str().into();
+            prop_assert_eq!(hash.as_str(), s);
+        }
+    }
+}
