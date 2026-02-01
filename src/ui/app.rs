@@ -31,7 +31,6 @@ pub struct App<G: GitGateway, F: DiffFormatter> {
 
     // UI state
     pub layout: LayoutState,
-    pub blame_scroll: usize,
     pub diff_scroll: usize,
     pub help_scroll: usize,
 
@@ -61,7 +60,6 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             blame_stack,
             diff_lines: None,
             layout: LayoutState::FullScreen,
-            blame_scroll: 0,
             diff_scroll: 0,
             help_scroll: 0,
             should_quit: false,
