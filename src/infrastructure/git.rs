@@ -105,6 +105,11 @@ impl GitGateway for Git2Gateway {
 
         let mut diff_text = Vec::new();
         diff.print(git2::DiffFormat::Patch, |_delta, _hunk, line| {
+            // Include the origin character (+, -, space, etc.) for diff lines
+            let origin = line.origin();
+            if origin == '+' || origin == '-' || origin == ' ' {
+                diff_text.push(origin as u8);
+            }
             diff_text.extend_from_slice(line.content());
             true
         })?;

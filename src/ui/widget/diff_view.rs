@@ -1,9 +1,9 @@
+use ansi_to_tui::IntoText;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::Style,
-    text::Line,
-    widgets::{Block, Borders, StatefulWidget, Widget},
+    text::Text,
+    widgets::{Block, Borders, Paragraph, StatefulWidget, Widget},
 };
 
 pub struct DiffView<'a> {
@@ -40,12 +40,14 @@ impl<'a> StatefulWidget for DiffView<'a> {
         let start = state.scroll_offset;
         let end = (start + visible_lines).min(total_lines);
 
-        for (i, line_content) in self.lines[start..end].iter().enumerate() {
-            let y = inner.y + i as u16;
+        // Join visible lines and convert ANSI to styled Text
+        let visible_content = self.lines[start..end].join("\n");
+        let text: Text = visible_content
+            .as_bytes()
+            .into_text()
+            .unwrap_or_else(|_| Text::raw(&visible_content));
 
-            // Lines contain ANSI escape codes from delta, render as-is
-            let line = Line::styled(line_content.as_str(), Style::default());
-            buf.set_line(inner.x, y, &line, inner.width);
-        }
+        let paragraph = Paragraph::new(text);
+        paragraph.render(inner, buf);
     }
 }
