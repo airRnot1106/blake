@@ -3,7 +3,7 @@ use std::path::Path;
 use crate::domain::{BlameFrame, CommitHash, CommitInfo, Diff};
 
 pub trait GitGateway {
-    type Error: std::error::Error;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     fn blame(&self, file_path: &Path, commit: &CommitHash) -> Result<BlameFrame, Self::Error>;
 
