@@ -37,9 +37,14 @@ pub struct KeyModifiers {
 
 impl KeyBinding {
     pub fn new(key: KeyCode) -> Self {
+        // For uppercase letters, force shift to true
+        let shift = matches!(key, KeyCode::Char(c) if c.is_ascii_uppercase());
         Self {
             key,
-            modifiers: KeyModifiers::default(),
+            modifiers: KeyModifiers {
+                shift,
+                ..KeyModifiers::default()
+            },
         }
     }
 
@@ -174,18 +179,6 @@ impl<'de> Deserialize<'de> for KeyBinding {
 
 impl From<crossterm::event::KeyEvent> for KeyBinding {
     fn from(event: crossterm::event::KeyEvent) -> Self {
-        let modifiers = KeyModifiers {
-            ctrl: event
-                .modifiers
-                .contains(crossterm::event::KeyModifiers::CONTROL),
-            alt: event
-                .modifiers
-                .contains(crossterm::event::KeyModifiers::ALT),
-            shift: event
-                .modifiers
-                .contains(crossterm::event::KeyModifiers::SHIFT),
-        };
-
         let key = match event.code {
             crossterm::event::KeyCode::Char(c) => KeyCode::Char(c),
             crossterm::event::KeyCode::Enter => KeyCode::Enter,
@@ -202,6 +195,23 @@ impl From<crossterm::event::KeyEvent> for KeyBinding {
             crossterm::event::KeyCode::End => KeyCode::End,
             crossterm::event::KeyCode::F(n) => KeyCode::F(n),
             _ => KeyCode::Char('\0'),
+        };
+
+        // For uppercase letters, force shift to true
+        let is_uppercase_char =
+            matches!(event.code, crossterm::event::KeyCode::Char(c) if c.is_ascii_uppercase());
+
+        let modifiers = KeyModifiers {
+            ctrl: event
+                .modifiers
+                .contains(crossterm::event::KeyModifiers::CONTROL),
+            alt: event
+                .modifiers
+                .contains(crossterm::event::KeyModifiers::ALT),
+            shift: is_uppercase_char
+                || event
+                    .modifiers
+                    .contains(crossterm::event::KeyModifiers::SHIFT),
         };
 
         Self { key, modifiers }
