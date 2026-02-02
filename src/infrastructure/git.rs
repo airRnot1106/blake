@@ -139,4 +139,26 @@ impl GitGateway for Git2Gateway {
             message,
         })
     }
+
+    fn github_commit_url(&self, commit: &CommitHash) -> Option<String> {
+        // Try to find a GitHub remote
+        let remote = self.repo.find_remote("origin").ok()?;
+        let url = remote.url()?;
+
+        // Parse GitHub URL from remote
+        // Supports: git@github.com:user/repo.git, https://github.com/user/repo.git
+        let github_base = if url.starts_with("git@github.com:") {
+            let path = url.strip_prefix("git@github.com:")?;
+            let path = path.strip_suffix(".git").unwrap_or(path);
+            format!("https://github.com/{}", path)
+        } else if url.starts_with("https://github.com/") {
+            let path = url.strip_prefix("https://github.com/")?;
+            let path = path.strip_suffix(".git").unwrap_or(path);
+            format!("https://github.com/{}", path)
+        } else {
+            return None;
+        };
+
+        Some(format!("{}/commit/{}", github_base, commit.as_str()))
+    }
 }

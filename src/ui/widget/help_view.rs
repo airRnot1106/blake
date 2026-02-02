@@ -86,6 +86,7 @@ impl<'a> HelpView<'a> {
             (DiffAction::ScrollTop, "Scroll to top"),
             (DiffAction::ScrollBottom, "Scroll to bottom"),
             (DiffAction::Close, "Close diff"),
+            (DiffAction::OpenInGitHub, "Open in GitHub"),
         ];
 
         for (action, desc) in diff_bindings {

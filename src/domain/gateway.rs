@@ -10,4 +10,6 @@ pub trait GitGateway {
     fn diff(&self, commit: &CommitHash) -> Result<Diff, Self::Error>;
 
     fn commit_info(&self, commit: &CommitHash) -> Result<CommitInfo, Self::Error>;
+
+    fn github_commit_url(&self, commit: &CommitHash) -> Option<String>;
 }

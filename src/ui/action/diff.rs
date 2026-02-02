@@ -19,4 +19,7 @@ pub enum DiffAction {
 
     // Close diff view
     Close,
+
+    // Open in GitHub
+    OpenInGitHub,
 }

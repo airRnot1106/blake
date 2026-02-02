@@ -361,6 +361,10 @@ impl KeymapConfig {
         config
             .diff
             .insert(KeyBinding::new(KeyCode::Escape), DiffAction::Close);
+        config.diff.insert(
+            KeyBinding::new(KeyCode::Char('o')),
+            DiffAction::OpenInGitHub,
+        );
 
         // Help
         config

@@ -191,8 +191,32 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
                 self.layout = LayoutState::FullScreen;
                 self.mode = Mode::Blame;
             }
+            DiffAction::OpenInGitHub => {
+                self.open_in_github();
+            }
         }
         Ok(())
+    }
+
+    fn open_in_github(&mut self) {
+        let commit_hash = match &self.diff_commit_info {
+            Some(info) => &info.hash,
+            None => {
+                self.status_message = Some("No commit selected".to_string());
+                return;
+            }
+        };
+
+        match self.git.github_commit_url(commit_hash) {
+            Some(url) => {
+                if let Err(e) = open::that(&url) {
+                    self.status_message = Some(format!("Failed to open browser: {}", e));
+                }
+            }
+            None => {
+                self.status_message = Some("Not a GitHub repository".to_string());
+            }
+        }
     }
 
     fn handle_help(&mut self, action: HelpAction) -> Result<()> {
