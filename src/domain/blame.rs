@@ -52,6 +52,21 @@ impl BlameStack {
     pub fn is_empty(&self) -> bool {
         self.frames.is_empty()
     }
+
+    /// Get the chain of commit hashes as "hash1 -> hash2 -> ..."
+    pub fn hash_chain(&self) -> Option<String> {
+        if self.frames.len() <= 1 {
+            return None;
+        }
+
+        let chain: Vec<String> = self
+            .frames
+            .iter()
+            .map(|f| f.commit_hash.short().to_string())
+            .collect();
+
+        Some(chain.join(" -> "))
+    }
 }
 
 #[cfg(test)]
@@ -141,5 +156,88 @@ mod tests {
         let stack = BlameStack::new();
         assert!(stack.is_empty());
         assert_eq!(stack.depth(), 0);
+    }
+
+    #[test]
+    fn hash_chain_empty_stack_returns_none() {
+        let stack = BlameStack::new();
+        assert!(stack.hash_chain().is_none());
+    }
+
+    #[test]
+    fn hash_chain_single_frame_returns_none() {
+        let mut stack = BlameStack::new();
+        stack.push(BlameFrame {
+            file_path: "test.rs".into(),
+            commit_hash: CommitHash::new("abc123def456789012345678901234567890abcd".to_string()),
+            entries: vec![],
+            selected_line: 0,
+        });
+        assert!(stack.hash_chain().is_none());
+    }
+
+    #[test]
+    fn hash_chain_two_frames_returns_chain() {
+        let mut stack = BlameStack::new();
+        stack.push(BlameFrame {
+            file_path: "test.rs".into(),
+            commit_hash: CommitHash::new("1111111111111111111111111111111111111111".to_string()),
+            entries: vec![],
+            selected_line: 0,
+        });
+        stack.push(BlameFrame {
+            file_path: "test.rs".into(),
+            commit_hash: CommitHash::new("2222222222222222222222222222222222222222".to_string()),
+            entries: vec![],
+            selected_line: 0,
+        });
+
+        let chain = stack.hash_chain().unwrap();
+        assert_eq!(chain, "1111111 -> 2222222");
+    }
+
+    #[test]
+    fn hash_chain_multiple_frames_returns_full_chain() {
+        let mut stack = BlameStack::new();
+        let hashes = [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "cccccccccccccccccccccccccccccccccccccccc",
+            "dddddddddddddddddddddddddddddddddddddddd",
+        ];
+
+        for hash in hashes {
+            stack.push(BlameFrame {
+                file_path: "test.rs".into(),
+                commit_hash: CommitHash::new(hash.to_string()),
+                entries: vec![],
+                selected_line: 0,
+            });
+        }
+
+        let chain = stack.hash_chain().unwrap();
+        assert_eq!(chain, "aaaaaaa -> bbbbbbb -> ccccccc -> ddddddd");
+    }
+
+    proptest! {
+        #[test]
+        fn hash_chain_contains_all_hashes(frames in proptest::collection::vec(arbitrary_frame(), 2..10)) {
+            let mut stack = BlameStack::new();
+            for frame in &frames {
+                stack.push(frame.clone());
+            }
+
+            let chain = stack.hash_chain().unwrap();
+
+            // Verify all short hashes are in the chain
+            for frame in &frames {
+                let short_hash = frame.commit_hash.short();
+                prop_assert!(chain.contains(short_hash));
+            }
+
+            // Verify the chain has the correct number of arrows
+            let arrow_count = chain.matches(" -> ").count();
+            prop_assert_eq!(arrow_count, frames.len() - 1);
+        }
     }
 }

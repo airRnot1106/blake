@@ -12,7 +12,7 @@ pub struct StatusBar {
     mode: Mode,
     file_path: String,
     position: String,
-    stack_depth: usize,
+    hash_chain: Option<String>,
     message: Option<String>,
 }
 
@@ -22,13 +22,13 @@ impl StatusBar {
         file_path: &str,
         current_line: usize,
         total_lines: usize,
-        stack_depth: usize,
+        hash_chain: Option<String>,
     ) -> Self {
         Self {
             mode,
             file_path: file_path.to_string(),
             position: format!("{}/{}", current_line + 1, total_lines),
-            stack_depth,
+            hash_chain,
             message: None,
         }
     }
@@ -54,12 +54,9 @@ impl Widget for StatusBar {
             .add_modifier(Modifier::BOLD);
         let mode_span = Span::styled(format!(" {} ", self.mode.name()), mode_style);
 
-        // Stack depth (if > 1)
-        let depth_span = if self.stack_depth > 1 {
-            Span::styled(
-                format!(" [depth: {}] ", self.stack_depth),
-                style.fg(Color::Yellow),
-            )
+        // Hash chain (if drilling down)
+        let chain_span = if let Some(ref chain) = self.hash_chain {
+            Span::styled(format!(" [{}] ", chain), style.fg(Color::Yellow))
         } else {
             Span::raw("")
         };
@@ -77,7 +74,7 @@ impl Widget for StatusBar {
         // Position (right aligned)
         let pos_span = Span::styled(format!(" {} ", self.position), style);
 
-        let left = Line::from(vec![mode_span, depth_span, file_span, message_span]);
+        let left = Line::from(vec![mode_span, chain_span, file_span, message_span]);
         let right = Line::from(vec![pos_span]);
 
         buf.set_line(area.x, area.y, &left, area.width);
