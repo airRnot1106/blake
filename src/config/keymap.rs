@@ -124,7 +124,7 @@ fn parse_key_binding(s: &str) -> Result<KeyBinding, String> {
     Ok(KeyBinding { key, modifiers })
 }
 
-fn key_binding_to_string(binding: &KeyBinding) -> String {
+pub fn key_binding_to_string(binding: &KeyBinding) -> String {
     let mut parts = Vec::new();
 
     if binding.modifiers.ctrl {
@@ -231,6 +231,42 @@ pub struct KeymapConfig {
 }
 
 impl KeymapConfig {
+    /// Find all keys bound to a specific global action
+    pub fn keys_for_global(&self, action: GlobalAction) -> Vec<&KeyBinding> {
+        self.global
+            .iter()
+            .filter(|(_, a)| **a == action)
+            .map(|(k, _)| k)
+            .collect()
+    }
+
+    /// Find all keys bound to a specific blame action
+    pub fn keys_for_blame(&self, action: BlameAction) -> Vec<&KeyBinding> {
+        self.blame
+            .iter()
+            .filter(|(_, a)| **a == action)
+            .map(|(k, _)| k)
+            .collect()
+    }
+
+    /// Find all keys bound to a specific diff action
+    pub fn keys_for_diff(&self, action: DiffAction) -> Vec<&KeyBinding> {
+        self.diff
+            .iter()
+            .filter(|(_, a)| **a == action)
+            .map(|(k, _)| k)
+            .collect()
+    }
+
+    /// Find all keys bound to a specific help action
+    pub fn keys_for_help(&self, action: HelpAction) -> Vec<&KeyBinding> {
+        self.help
+            .iter()
+            .filter(|(_, a)| **a == action)
+            .map(|(k, _)| k)
+            .collect()
+    }
+
     pub fn with_defaults() -> Self {
         let mut config = Self::default();
 

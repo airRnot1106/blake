@@ -6,19 +6,34 @@ use ratatui::{
     widgets::{Block, Borders, Clear, StatefulWidget, Widget},
 };
 
-pub struct HelpView;
+use crate::config::{KeymapConfig, key_binding_to_string};
+use crate::ui::action::{BlameAction, DiffAction, GlobalAction};
+
+pub struct HelpView<'a> {
+    keymap: &'a KeymapConfig,
+}
 
 pub struct HelpViewState {
     pub scroll_offset: usize,
 }
 
-impl HelpView {
-    pub fn new() -> Self {
-        Self
+impl<'a> HelpView<'a> {
+    pub fn new(keymap: &'a KeymapConfig) -> Self {
+        Self { keymap }
     }
 
-    fn help_lines() -> Vec<Line<'static>> {
-        vec![
+    fn format_keys(&self, keys: Vec<&crate::config::KeyBinding>) -> String {
+        if keys.is_empty() {
+            return "-".to_string();
+        }
+        keys.iter()
+            .map(|k| key_binding_to_string(k))
+            .collect::<Vec<_>>()
+            .join(" / ")
+    }
+
+    fn help_lines(&self) -> Vec<Line<'a>> {
+        let mut lines = vec![
             Line::from(Span::styled(
                 "Keybindings",
                 Style::default()
@@ -27,43 +42,74 @@ impl HelpView {
             )),
             Line::from(""),
             Line::from(Span::styled("Blame Mode", Style::default().fg(Color::Blue))),
-            Line::from("  j / Down      Cursor down"),
-            Line::from("  k / Up        Cursor up"),
-            Line::from("  J             Cursor 10 down"),
-            Line::from("  K             Cursor 10 up"),
-            Line::from("  Ctrl+d        Page down"),
-            Line::from("  Ctrl+u        Page up"),
-            Line::from("  g / Home      Go to top"),
-            Line::from("  G / End       Go to bottom"),
-            Line::from("  Enter         Drill down (blame at parent)"),
-            Line::from("  Backspace     Go back"),
-            Line::from("  d             Show diff"),
-            Line::from(""),
-            Line::from(Span::styled("Diff Mode", Style::default().fg(Color::Blue))),
-            Line::from("  j / Down      Scroll down"),
-            Line::from("  k / Up        Scroll up"),
-            Line::from("  J             Scroll 10 down"),
-            Line::from("  K             Scroll 10 up"),
-            Line::from("  Ctrl+d        Page down"),
-            Line::from("  Ctrl+u        Page up"),
-            Line::from("  g / Home      Scroll to top"),
-            Line::from("  G / End       Scroll to bottom"),
-            Line::from("  q / Esc       Close diff"),
-            Line::from(""),
-            Line::from(Span::styled("Global", Style::default().fg(Color::Blue))),
-            Line::from("  ?             Show this help"),
-            Line::from("  q             Quit"),
-        ]
+        ];
+
+        // Blame mode keybindings
+        let blame_bindings = [
+            (BlameAction::CursorDown, "Cursor down"),
+            (BlameAction::CursorUp, "Cursor up"),
+            (BlameAction::Cursor10Down, "Cursor 10 down"),
+            (BlameAction::Cursor10Up, "Cursor 10 up"),
+            (BlameAction::CursorPageDown, "Page down"),
+            (BlameAction::CursorPageUp, "Page up"),
+            (BlameAction::CursorTop, "Go to top"),
+            (BlameAction::CursorBottom, "Go to bottom"),
+            (BlameAction::DrillDown, "Drill down (blame at parent)"),
+            (BlameAction::GoBack, "Go back"),
+            (BlameAction::ShowDiff, "Show diff"),
+        ];
+
+        for (action, desc) in blame_bindings {
+            let keys = self.format_keys(self.keymap.keys_for_blame(action));
+            lines.push(Line::from(format!("  {:15} {}", keys, desc)));
+        }
+
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+            "Diff Mode",
+            Style::default().fg(Color::Blue),
+        )));
+
+        // Diff mode keybindings
+        let diff_bindings = [
+            (DiffAction::ScrollDown, "Scroll down"),
+            (DiffAction::ScrollUp, "Scroll up"),
+            (DiffAction::Scroll10Down, "Scroll 10 down"),
+            (DiffAction::Scroll10Up, "Scroll 10 up"),
+            (DiffAction::ScrollPageDown, "Page down"),
+            (DiffAction::ScrollPageUp, "Page up"),
+            (DiffAction::ScrollTop, "Scroll to top"),
+            (DiffAction::ScrollBottom, "Scroll to bottom"),
+            (DiffAction::Close, "Close diff"),
+        ];
+
+        for (action, desc) in diff_bindings {
+            let keys = self.format_keys(self.keymap.keys_for_diff(action));
+            lines.push(Line::from(format!("  {:15} {}", keys, desc)));
+        }
+
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+            "Global",
+            Style::default().fg(Color::Blue),
+        )));
+
+        // Global keybindings
+        let global_bindings = [
+            (GlobalAction::ShowHelp, "Show this help"),
+            (GlobalAction::Quit, "Quit"),
+        ];
+
+        for (action, desc) in global_bindings {
+            let keys = self.format_keys(self.keymap.keys_for_global(action));
+            lines.push(Line::from(format!("  {:15} {}", keys, desc)));
+        }
+
+        lines
     }
 }
 
-impl Default for HelpView {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl StatefulWidget for HelpView {
+impl<'a> StatefulWidget for HelpView<'a> {
     type State = HelpViewState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -84,7 +130,7 @@ impl StatefulWidget for HelpView {
         let inner = block.inner(popup_area);
         block.render(popup_area, buf);
 
-        let lines = Self::help_lines();
+        let lines = self.help_lines();
         let visible_lines = inner.height as usize;
         let total_lines = lines.len();
 

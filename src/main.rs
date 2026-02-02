@@ -163,7 +163,7 @@ fn render(
     // Help overlay
     if matches!(app.mode, Mode::Help) {
         help_state.scroll_offset = app.help_scroll;
-        let help_view = HelpView::new();
+        let help_view = HelpView::new(&app.config.keymap);
         help_view.render(area, frame.buffer_mut(), help_state);
     }
 }
