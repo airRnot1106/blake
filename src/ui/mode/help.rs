@@ -1,7 +1,7 @@
 use crate::config::{KeyBinding, KeymapConfig};
 use crate::ui::action::Action;
 
-use super::{Mode, ModeHandler};
+use super::ModeHandler;
 
 pub struct HelpModeHandler;
 
@@ -18,9 +18,5 @@ impl ModeHandler for HelpModeHandler {
         }
 
         Action::None
-    }
-
-    fn mode(&self) -> Mode {
-        Mode::Help
     }
 }

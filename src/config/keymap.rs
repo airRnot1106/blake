@@ -60,11 +60,13 @@ impl KeyModifiers {
         alt: false,
         shift: false,
     };
+    #[allow(dead_code)]
     pub const ALT: Self = Self {
         ctrl: false,
         alt: true,
         shift: false,
     };
+    #[allow(dead_code)]
     pub const SHIFT: Self = Self {
         ctrl: false,
         alt: false,
@@ -259,6 +261,7 @@ impl KeymapConfig {
     }
 
     /// Find all keys bound to a specific help action
+    #[allow(dead_code)]
     pub fn keys_for_help(&self, action: HelpAction) -> Vec<&KeyBinding> {
         self.help
             .iter()

@@ -49,6 +49,7 @@ impl BlameStack {
         self.frames.len()
     }
 
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.frames.is_empty()
     }

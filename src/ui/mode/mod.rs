@@ -31,5 +31,4 @@ impl Mode {
 /// Trait for handling key events per mode
 pub trait ModeHandler {
     fn handle_key(&self, key: KeyBinding, keymap: &KeymapConfig) -> Action;
-    fn mode(&self) -> Mode;
 }

@@ -9,7 +9,4 @@ pub trait DiffFormatter: Send + Sync {
 
     /// Check if this formatter is available
     fn is_available(&self) -> bool;
-
-    /// Formatter name
-    fn name(&self) -> &'static str;
 }

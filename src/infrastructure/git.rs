@@ -8,9 +8,6 @@ use crate::domain::{BlameEntry, BlameFrame, CommitHash, CommitInfo, Diff, GitGat
 pub enum GitError {
     #[error("Git error: {0}")]
     Git2(#[from] git2::Error),
-
-    #[error("File not found: {0}")]
-    FileNotFound(String),
 }
 
 pub struct Git2Gateway {
@@ -18,6 +15,7 @@ pub struct Git2Gateway {
 }
 
 impl Git2Gateway {
+    #[allow(dead_code)]
     pub fn open(path: &Path) -> Result<Self, GitError> {
         let repo = Repository::discover(path)?;
         Ok(Self { repo })

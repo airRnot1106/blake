@@ -72,8 +72,4 @@ impl DiffFormatter for DeltaFormatter {
     fn is_available(&self) -> bool {
         self.delta_path.is_some()
     }
-
-    fn name(&self) -> &'static str {
-        "delta"
-    }
 }

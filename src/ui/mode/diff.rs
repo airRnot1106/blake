@@ -1,7 +1,7 @@
 use crate::config::{KeyBinding, KeymapConfig};
 use crate::ui::action::Action;
 
-use super::{Mode, ModeHandler};
+use super::ModeHandler;
 
 pub struct DiffModeHandler;
 
@@ -18,9 +18,5 @@ impl ModeHandler for DiffModeHandler {
         }
 
         Action::None
-    }
-
-    fn mode(&self) -> Mode {
-        Mode::Diff
     }
 }
