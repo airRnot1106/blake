@@ -369,6 +369,13 @@ impl KeymapConfig {
         config
             .help
             .insert(KeyBinding::new(KeyCode::Char('k')), HelpAction::ScrollUp);
+        config.help.insert(
+            KeyBinding::new(KeyCode::Char('J')),
+            HelpAction::Scroll10Down,
+        );
+        config
+            .help
+            .insert(KeyBinding::new(KeyCode::Char('K')), HelpAction::Scroll10Up);
         config
             .help
             .insert(KeyBinding::new(KeyCode::Char('q')), HelpAction::Close);

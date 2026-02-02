@@ -65,7 +65,10 @@ fn run(file_path: PathBuf) -> Result<()> {
         scroll_offset: 0,
         selected_line: 0,
     };
-    let mut help_state = HelpViewState { scroll_offset: 0 };
+    let mut help_state = HelpViewState {
+        scroll_offset: 0,
+        selected_line: 0,
+    };
 
     // Event handler
     let event_handler = EventHandler::new(Duration::from_millis(100));
@@ -163,6 +166,7 @@ fn render(
     // Help overlay
     if matches!(app.mode, Mode::Help) {
         help_state.scroll_offset = app.help_scroll;
+        help_state.selected_line = app.help_selected_line;
         let help_view = HelpView::new(&app.config.keymap);
         help_view.render(area, frame.buffer_mut(), help_state);
     }

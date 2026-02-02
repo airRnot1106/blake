@@ -7,6 +7,7 @@ use crate::config::AppConfig;
 use crate::domain::{BlameStack, CommitHash, CommitInfo, GitGateway};
 use crate::ui::action::{Action, BlameAction, DiffAction, GlobalAction, HelpAction};
 use crate::ui::mode::Mode;
+use crate::ui::widget::HelpView;
 
 /// Layout state
 #[derive(Debug, Clone)]
@@ -34,6 +35,7 @@ pub struct App<G: GitGateway, F: DiffFormatter> {
     pub layout: LayoutState,
     pub diff_selected_line: usize,
     pub help_scroll: usize,
+    pub help_selected_line: usize,
     pub status_message: Option<String>,
 
     // Flags
@@ -65,6 +67,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             layout: LayoutState::FullScreen,
             diff_selected_line: 0,
             help_scroll: 0,
+            help_selected_line: 0,
             status_message: None,
             should_quit: false,
         })
@@ -190,12 +193,23 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
     }
 
     fn handle_help(&mut self, action: HelpAction) -> Result<()> {
+        let total = HelpView::new(&self.config.keymap).line_count();
+
         match action {
             HelpAction::ScrollUp => {
-                self.help_scroll = self.help_scroll.saturating_sub(1);
+                self.help_selected_line = self.help_selected_line.saturating_sub(1);
             }
             HelpAction::ScrollDown => {
-                self.help_scroll += 1;
+                if self.help_selected_line < total.saturating_sub(1) {
+                    self.help_selected_line += 1;
+                }
+            }
+            HelpAction::Scroll10Up => {
+                self.help_selected_line = self.help_selected_line.saturating_sub(10);
+            }
+            HelpAction::Scroll10Down => {
+                self.help_selected_line =
+                    (self.help_selected_line + 10).min(total.saturating_sub(1));
             }
             HelpAction::Close => {
                 self.mode = Mode::Blame;

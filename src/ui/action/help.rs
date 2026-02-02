@@ -5,5 +5,7 @@ use serde::{Deserialize, Serialize};
 pub enum HelpAction {
     ScrollUp,
     ScrollDown,
+    Scroll10Up,
+    Scroll10Down,
     Close,
 }

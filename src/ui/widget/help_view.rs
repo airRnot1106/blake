@@ -15,11 +15,16 @@ pub struct HelpView<'a> {
 
 pub struct HelpViewState {
     pub scroll_offset: usize,
+    pub selected_line: usize,
 }
 
 impl<'a> HelpView<'a> {
     pub fn new(keymap: &'a KeymapConfig) -> Self {
         Self { keymap }
+    }
+
+    pub fn line_count(&self) -> usize {
+        self.help_lines().len()
     }
 
     fn format_keys(&self, keys: Vec<&crate::config::KeyBinding>) -> String {
@@ -134,17 +139,42 @@ impl<'a> StatefulWidget for HelpView<'a> {
         let visible_lines = inner.height as usize;
         let total_lines = lines.len();
 
-        // Clamp scroll
-        if state.scroll_offset > total_lines.saturating_sub(visible_lines) {
-            state.scroll_offset = total_lines.saturating_sub(visible_lines);
+        // Clamp selected line
+        if state.selected_line >= total_lines {
+            state.selected_line = total_lines.saturating_sub(1);
+        }
+
+        // Adjust scroll to keep selected line visible
+        if state.selected_line < state.scroll_offset {
+            state.scroll_offset = state.selected_line;
+        } else if state.selected_line >= state.scroll_offset + visible_lines {
+            state.scroll_offset = state.selected_line - visible_lines + 1;
         }
 
         let start = state.scroll_offset;
         let end = (start + visible_lines).min(total_lines);
 
         for (i, line) in lines[start..end].iter().enumerate() {
+            let line_index = start + i;
             let y = inner.y + i as u16;
-            buf.set_line(inner.x, y, line, inner.width);
+            let is_selected = line_index == state.selected_line;
+
+            if is_selected {
+                // Fill entire line with REVERSED background first (for empty lines)
+                let reversed_style = Style::default().add_modifier(Modifier::REVERSED);
+                for x in inner.x..inner.x + inner.width {
+                    buf[(x, y)].set_style(reversed_style);
+                }
+
+                // Apply REVERSED modifier for selected line content
+                let mut styled_line = line.clone();
+                for span in &mut styled_line.spans {
+                    span.style = span.style.add_modifier(Modifier::REVERSED);
+                }
+                buf.set_line(inner.x, y, &styled_line, inner.width);
+            } else {
+                buf.set_line(inner.x, y, line, inner.width);
+            }
         }
     }
 }
