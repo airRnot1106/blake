@@ -114,6 +114,14 @@ impl<'a> StatefulWidget for DiffView<'a> {
 
             let is_selected = idx == state.selected_line;
 
+            // Fill entire line with REVERSED background first (for selected line)
+            if is_selected {
+                let reversed_style = Style::default().add_modifier(Modifier::REVERSED);
+                for x in inner.x..inner.x + inner.width {
+                    buf[(x, y)].set_style(reversed_style);
+                }
+            }
+
             // Convert ANSI to styled Line
             let text = line_content
                 .as_bytes()

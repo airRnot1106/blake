@@ -66,6 +66,14 @@ impl<'a> StatefulWidget for BlameView<'a> {
                 Style::default()
             };
 
+            // Fill entire line with REVERSED background first (for selected line)
+            if is_selected {
+                let reversed_style = Style::default().add_modifier(Modifier::REVERSED);
+                for x in inner.x..inner.x + inner.width {
+                    buf[(x, y)].set_style(reversed_style);
+                }
+            }
+
             // Commit hash with age-based color (newer = brighter yellow, older = darker)
             let hash_color = age_to_color(entry.timestamp, min_ts, max_ts);
             let hash_span = Span::styled(
