@@ -36,6 +36,7 @@ pub struct App<G: GitGateway, F: DiffFormatter> {
     pub diff_selected_line: usize,
     pub help_scroll: usize,
     pub help_selected_line: usize,
+    pub previous_mode: Mode,
     pub status_message: Option<String>,
 
     // Flags
@@ -68,6 +69,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             diff_selected_line: 0,
             help_scroll: 0,
             help_selected_line: 0,
+            previous_mode: Mode::Blame,
             status_message: None,
             should_quit: false,
         })
@@ -89,6 +91,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
                 self.should_quit = true;
             }
             GlobalAction::ShowHelp => {
+                self.previous_mode = self.mode;
                 self.mode = Mode::Help;
             }
         }
@@ -212,7 +215,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
                     (self.help_selected_line + 10).min(total.saturating_sub(1));
             }
             HelpAction::Close => {
-                self.mode = Mode::Blame;
+                self.mode = self.previous_mode;
             }
         }
         Ok(())
