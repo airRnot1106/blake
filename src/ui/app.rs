@@ -91,8 +91,11 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
                 self.should_quit = true;
             }
             GlobalAction::ShowHelp => {
-                self.previous_mode = self.mode;
-                self.mode = Mode::Help;
+                // Don't update previous_mode if already in Help mode
+                if self.mode != Mode::Help {
+                    self.previous_mode = self.mode;
+                    self.mode = Mode::Help;
+                }
             }
         }
         Ok(())
