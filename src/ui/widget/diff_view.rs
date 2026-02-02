@@ -83,40 +83,57 @@ impl<'a> StatefulWidget for DiffView<'a> {
         let start = state.scroll_offset;
         let end = (start + visible_lines).min(total_lines);
 
-        for i in start..end {
-            let y = inner.y + (i - start) as u16;
+        let mut y_offset = 0u16;
 
-            if i < header_len {
-                // Render header line
-                let line = &header[i];
-                buf.set_line(inner.x, y, line, inner.width);
+        // Render visible header lines
+        let header_start = start.min(header_len);
+        let header_end = end.min(header_len);
+        for (idx, line) in header
+            .iter()
+            .enumerate()
+            .skip(header_start)
+            .take(header_end.saturating_sub(header_start))
+        {
+            let y = inner.y + (idx - start) as u16;
+            buf.set_line(inner.x, y, line, inner.width);
+            y_offset = (idx - start + 1) as u16;
+        }
+
+        // Render visible diff lines
+        let diff_start = start.saturating_sub(header_len);
+        let diff_end = end.saturating_sub(header_len);
+        for (idx, line_content) in self
+            .lines
+            .iter()
+            .enumerate()
+            .skip(diff_start)
+            .take(diff_end.saturating_sub(diff_start))
+        {
+            let y = inner.y + y_offset;
+            y_offset += 1;
+
+            let is_selected = idx == state.selected_line;
+
+            // Convert ANSI to styled Line
+            let text = line_content
+                .as_bytes()
+                .into_text()
+                .unwrap_or_else(|_| line_content.as_str().into());
+
+            let mut line: Line = if text.lines.is_empty() {
+                Line::raw("")
             } else {
-                // Render diff line
-                let diff_index = i - header_len;
-                let line_content = &self.lines[diff_index];
-                let is_selected = diff_index == state.selected_line;
+                text.lines.into_iter().next().unwrap_or_default()
+            };
 
-                // Convert ANSI to styled Line
-                let text = line_content
-                    .as_bytes()
-                    .into_text()
-                    .unwrap_or_else(|_| line_content.as_str().into());
-
-                let mut line: Line = if text.lines.is_empty() {
-                    Line::raw("")
-                } else {
-                    text.lines.into_iter().next().unwrap_or_default()
-                };
-
-                // Apply REVERSED modifier for selected line
-                if is_selected {
-                    for span in &mut line.spans {
-                        span.style = span.style.add_modifier(Modifier::REVERSED);
-                    }
+            // Apply REVERSED modifier for selected line
+            if is_selected {
+                for span in &mut line.spans {
+                    span.style = span.style.add_modifier(Modifier::REVERSED);
                 }
-
-                buf.set_line(inner.x, y, &line, inner.width);
             }
+
+            buf.set_line(inner.x, y, &line, inner.width);
         }
     }
 }
@@ -172,5 +189,5 @@ fn format_timestamp(timestamp: i64) -> String {
 }
 
 fn is_leap_year(year: u64) -> bool {
-    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+    (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
 }

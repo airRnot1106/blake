@@ -84,11 +84,9 @@ fn run(file_path: PathBuf) -> Result<()> {
         })?;
 
         // Handle events
-        if let Some(event) = event_handler.poll()? {
-            if let Event::Key(key) = event {
-                let action = key_to_action(key, &app.mode, &app.config.keymap);
-                app.dispatch(action)?;
-            }
+        if let Some(Event::Key(key)) = event_handler.poll()? {
+            let action = key_to_action(key, &app.mode, &app.config.keymap);
+            app.dispatch(action)?;
         }
 
         if app.should_quit {
@@ -123,7 +121,7 @@ fn render(
 
                 // Status bar
                 let status_bar = StatusBar::new(
-                    app.mode.clone(),
+                    app.mode,
                     &blame_frame.file_path.to_string_lossy(),
                     blame_frame.selected_line,
                     blame_frame.entries.len(),
@@ -143,7 +141,7 @@ fn render(
 
                 // Status bar
                 let status_bar = StatusBar::new(
-                    app.mode.clone(),
+                    app.mode,
                     &blame_frame.file_path.to_string_lossy(),
                     blame_frame.selected_line,
                     blame_frame.entries.len(),

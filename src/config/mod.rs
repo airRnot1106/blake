@@ -1,7 +1,7 @@
 mod keymap;
 mod loader;
 
-pub use keymap::{KeyBinding, KeyCode, KeyModifiers, KeymapConfig};
+pub use keymap::{KeyBinding, KeymapConfig};
 pub use loader::ConfigLoader;
 
 use serde::{Deserialize, Serialize};
