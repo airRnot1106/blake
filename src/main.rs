@@ -40,6 +40,12 @@ fn main() -> Result<()> {
         std::process::exit(1);
     }
 
+    // Canonicalize to absolute path
+    let file_path = file_path.canonicalize().unwrap_or_else(|_| {
+        eprintln!("Failed to resolve path: {}", file_path.display());
+        std::process::exit(1);
+    });
+
     run(file_path)
 }
 

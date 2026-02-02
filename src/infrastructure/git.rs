@@ -35,10 +35,17 @@ impl GitGateway for Git2Gateway {
         let commit_obj = self.repo.revparse_single(spec)?.peel_to_commit()?;
         let commit_oid = commit_obj.id();
 
+        // Convert absolute path to repo-relative path
+        let repo_root = self
+            .repo
+            .workdir()
+            .ok_or_else(|| git2::Error::from_str("Repository has no working directory"))?;
+        let relative_path = file_path.strip_prefix(repo_root).unwrap_or(file_path);
+
         let mut opts = git2::BlameOptions::new();
         opts.newest_commit(commit_oid);
 
-        let blame = self.repo.blame_file(file_path, Some(&mut opts))?;
+        let blame = self.repo.blame_file(relative_path, Some(&mut opts))?;
 
         let mut entries = Vec::new();
         for hunk in blame.iter() {
@@ -49,7 +56,7 @@ impl GitGateway for Git2Gateway {
 
             let blob = commit_obj
                 .tree()?
-                .get_path(file_path)?
+                .get_path(relative_path)?
                 .to_object(&self.repo)?;
             let content = blob
                 .as_blob()
@@ -81,7 +88,7 @@ impl GitGateway for Git2Gateway {
         entries.sort_by_key(|e| e.line_number);
 
         Ok(BlameFrame {
-            file_path: file_path.to_path_buf(),
+            file_path: relative_path.to_path_buf(),
             commit_hash: CommitHash::new(commit_oid.to_string()),
             entries,
             selected_line: 0,
