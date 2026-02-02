@@ -128,7 +128,8 @@ fn render(
                     blame_frame.selected_line,
                     blame_frame.entries.len(),
                     app.blame_stack.depth(),
-                );
+                )
+                .with_message(app.status_message.as_deref());
                 frame.render_widget(status_bar, layout.status_bar);
             }
         }
@@ -147,7 +148,8 @@ fn render(
                     blame_frame.selected_line,
                     blame_frame.entries.len(),
                     app.blame_stack.depth(),
-                );
+                )
+                .with_message(app.status_message.as_deref());
                 frame.render_widget(status_bar, split.status_bar);
             }
 

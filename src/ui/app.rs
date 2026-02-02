@@ -33,6 +33,7 @@ pub struct App<G: GitGateway, F: DiffFormatter> {
     pub layout: LayoutState,
     pub diff_selected_line: usize,
     pub help_scroll: usize,
+    pub status_message: Option<String>,
 
     // Flags
     pub should_quit: bool,
@@ -62,6 +63,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             layout: LayoutState::FullScreen,
             diff_selected_line: 0,
             help_scroll: 0,
+            status_message: None,
             should_quit: false,
         })
     }
@@ -89,6 +91,11 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
     }
 
     fn handle_blame(&mut self, action: BlameAction) -> Result<()> {
+        // Clear status message on most actions (DrillDown sets its own)
+        if !matches!(action, BlameAction::DrillDown) {
+            self.status_message = None;
+        }
+
         let frame = match self.blame_stack.current_mut() {
             Some(f) => f,
             None => return Ok(()),
@@ -217,8 +224,17 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             None => return Ok(()), // Initial commit, no parent to drill into
         };
 
-        let new_frame = self.git.blame(&file_path, &parent)?;
-        self.blame_stack.push(new_frame);
+        // Try to blame at parent commit - file may not exist there
+        match self.git.blame(&file_path, &parent) {
+            Ok(new_frame) => {
+                self.blame_stack.push(new_frame);
+                self.status_message = None;
+            }
+            Err(_) => {
+                self.status_message =
+                    Some("The selected commit has no parents with this file".to_string());
+            }
+        }
 
         Ok(())
     }

@@ -13,6 +13,7 @@ pub struct StatusBar {
     file_path: String,
     position: String,
     stack_depth: usize,
+    message: Option<String>,
 }
 
 impl StatusBar {
@@ -28,7 +29,13 @@ impl StatusBar {
             file_path: file_path.to_string(),
             position: format!("{}/{}", current_line + 1, total_lines),
             stack_depth,
+            message: None,
         }
+    }
+
+    pub fn with_message(mut self, message: Option<&str>) -> Self {
+        self.message = message.map(|s| s.to_string());
+        self
     }
 }
 
@@ -60,10 +67,17 @@ impl Widget for StatusBar {
         // File path
         let file_span = Span::styled(format!(" {} ", self.file_path), style);
 
+        // Message (if any)
+        let message_span = if let Some(ref msg) = self.message {
+            Span::styled(format!(" {} ", msg), style.fg(Color::Yellow))
+        } else {
+            Span::raw("")
+        };
+
         // Position (right aligned)
         let pos_span = Span::styled(format!(" {} ", self.position), style);
 
-        let left = Line::from(vec![mode_span, depth_span, file_span]);
+        let left = Line::from(vec![mode_span, depth_span, file_span, message_span]);
         let right = Line::from(vec![pos_span]);
 
         buf.set_line(area.x, area.y, &left, area.width);
