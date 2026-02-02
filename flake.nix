@@ -1,5 +1,6 @@
 {
   inputs = {
+    crane.url = "github:ipetkov/crane";
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -19,6 +20,7 @@
   outputs =
     {
       self,
+      crane,
       fenix,
       git-hooks,
       nixpkgs,
@@ -35,6 +37,7 @@
             inherit system;
             pkgs = nixpkgs.legacyPackages.${system};
             overlays = [
+              crane.overlays.default
               fenix.overlays.default
             ];
           }
@@ -110,6 +113,15 @@
               };
             };
           };
+        }
+      );
+      packages = eachSystem (
+        { pkgs, system, ... }:
+        let
+          craneLib = (crane.mkLib pkgs).overrideToolchain fenix.packages.${system}.stable.toolchain;
+        in
+        {
+          default = pkgs.callPackage ./default.nix { inherit craneLib; };
         }
       );
     };
