@@ -13,7 +13,6 @@ open = "5.3.3"
 ratatui = "0.29"
 serde = {features = ["derive"], version = "1.0.228"}
 thiserror = "2"
-tokio = {features = ["full"], version = "1"}
 toml = "0.9.11"
 which = "8.0.0"
 
