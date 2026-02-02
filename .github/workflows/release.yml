@@ -1,0 +1,177 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            system: x86_64-linux
+          - arch: aarch64
+            system: aarch64-linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035 # v34
+        with:
+          nix_conf: |
+            extra-platforms = aarch64-linux
+
+      - name: Setup Nix Cache
+        uses: nix-community/cache-nix-action@106bba72ed8e29c8357661199511ef07790175e9 # v7.0.1
+        with:
+          primary-key: nix-${{ runner.os }}-${{ matrix.system }}-${{ hashFiles('**/*.nix', 'flake.lock', 'Cargo.lock') }}
+          restore-prefixes-first-match: |
+            nix-${{ runner.os }}-${{ matrix.system }}-
+            nix-${{ runner.os }}-
+          paths: |
+            /nix/store
+
+      - name: Setup QEMU for aarch64
+        if: matrix.arch == 'aarch64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+
+      - name: Build with Nix
+        run: nix build .#packages.${{ matrix.system }}.default
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p dist
+          cp result/bin/blake dist/blake-${{ matrix.arch }}-linux
+          chmod +x dist/blake-${{ matrix.arch }}-linux
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: blake-${{ matrix.arch }}-linux
+          path: dist/blake-${{ matrix.arch }}-linux
+          retention-days: 1
+
+  build-macos:
+    name: Build macOS
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            runner: macos-15-intel
+            system: x86_64-darwin
+          - arch: aarch64
+            runner: macos-15
+            system: aarch64-darwin
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035 # v34
+
+      - name: Setup Nix Cache
+        uses: nix-community/cache-nix-action@106bba72ed8e29c8357661199511ef07790175e9 # v7.0.1
+        with:
+          primary-key: nix-${{ runner.os }}-${{ matrix.system }}-${{ hashFiles('**/*.nix', 'flake.lock', 'Cargo.lock') }}
+          restore-prefixes-first-match: |
+            nix-${{ runner.os }}-${{ matrix.system }}-
+            nix-${{ runner.os }}-
+          paths: |
+            /nix/store
+
+      - name: Build with Nix
+        run: nix build .#packages.${{ matrix.system }}.default
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p dist
+          cp result/bin/blake dist/blake-${{ matrix.arch }}-darwin
+          chmod +x dist/blake-${{ matrix.arch }}-darwin
+
+          # Ad-hoc code signing for macOS
+          codesign -s - dist/blake-${{ matrix.arch }}-darwin
+
+          # Verify signature
+          codesign -vv dist/blake-${{ matrix.arch }}-darwin
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: blake-${{ matrix.arch }}-darwin
+          path: dist/blake-${{ matrix.arch }}-darwin
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: dist
+
+      - name: Display structure of downloaded files
+        run: ls -R dist
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+
+          for binary in dist/*/blake-*; do
+            if [ -f "$binary" ]; then
+              filename=$(basename "$binary")
+              cp "$binary" release/blake
+              chmod +x release/blake
+              tar -czf "release/${filename}.tar.gz" -C release blake
+              rm release/blake
+            fi
+          done
+
+          ls -lh release/
+
+      - name: Create checksums
+        run: |
+          cd release
+          sha256sum *.tar.gz > checksums.txt
+          cat checksums.txt
+
+      - name: Determine if prerelease
+        id: prerelease
+        run: |
+          if [[ "${{ github.ref_name }}" =~ -(alpha|beta|rc|test) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          files: |
+            release/blake-x86_64-linux.tar.gz
+            release/blake-aarch64-linux.tar.gz
+            release/blake-x86_64-darwin.tar.gz
+            release/blake-aarch64-darwin.tar.gz
+            release/checksums.txt
+          draft: false
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+          generate_release_notes: ${{ steps.prerelease.outputs.is_prerelease == 'false' }}
