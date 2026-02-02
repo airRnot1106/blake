@@ -61,7 +61,10 @@ fn run(file_path: PathBuf) -> Result<()> {
 
     // Widget states
     let mut blame_state = BlameViewState { scroll_offset: 0 };
-    let mut diff_state = DiffViewState { scroll_offset: 0 };
+    let mut diff_state = DiffViewState {
+        scroll_offset: 0,
+        selected_line: 0,
+    };
     let mut help_state = HelpViewState { scroll_offset: 0 };
 
     // Event handler
@@ -150,7 +153,7 @@ fn render(
 
             // Diff view
             if let Some(lines) = &app.diff_lines {
-                diff_state.scroll_offset = app.diff_scroll;
+                diff_state.selected_line = app.diff_selected_line;
                 let diff_view = DiffView::new(lines);
                 diff_view.render(split.diff, frame.buffer_mut(), diff_state);
             }

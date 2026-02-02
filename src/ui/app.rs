@@ -31,7 +31,7 @@ pub struct App<G: GitGateway, F: DiffFormatter> {
 
     // UI state
     pub layout: LayoutState,
-    pub diff_scroll: usize,
+    pub diff_selected_line: usize,
     pub help_scroll: usize,
 
     // Flags
@@ -60,7 +60,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             blame_stack,
             diff_lines: None,
             layout: LayoutState::FullScreen,
-            diff_scroll: 0,
+            diff_selected_line: 0,
             help_scroll: 0,
             should_quit: false,
         })
@@ -141,30 +141,32 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
 
         match action {
             DiffAction::ScrollUp => {
-                self.diff_scroll = self.diff_scroll.saturating_sub(1);
+                self.diff_selected_line = self.diff_selected_line.saturating_sub(1);
             }
             DiffAction::ScrollDown => {
-                if self.diff_scroll < total.saturating_sub(1) {
-                    self.diff_scroll += 1;
+                if self.diff_selected_line < total.saturating_sub(1) {
+                    self.diff_selected_line += 1;
                 }
             }
             DiffAction::Scroll10Up => {
-                self.diff_scroll = self.diff_scroll.saturating_sub(10);
+                self.diff_selected_line = self.diff_selected_line.saturating_sub(10);
             }
             DiffAction::Scroll10Down => {
-                self.diff_scroll = (self.diff_scroll + 10).min(total.saturating_sub(1));
+                self.diff_selected_line =
+                    (self.diff_selected_line + 10).min(total.saturating_sub(1));
             }
             DiffAction::ScrollPageUp => {
-                self.diff_scroll = self.diff_scroll.saturating_sub(20);
+                self.diff_selected_line = self.diff_selected_line.saturating_sub(20);
             }
             DiffAction::ScrollPageDown => {
-                self.diff_scroll = (self.diff_scroll + 20).min(total.saturating_sub(1));
+                self.diff_selected_line =
+                    (self.diff_selected_line + 20).min(total.saturating_sub(1));
             }
             DiffAction::ScrollTop => {
-                self.diff_scroll = 0;
+                self.diff_selected_line = 0;
             }
             DiffAction::ScrollBottom => {
-                self.diff_scroll = total.saturating_sub(1);
+                self.diff_selected_line = total.saturating_sub(1);
             }
             DiffAction::ScrollLeft | DiffAction::ScrollRight => {
                 // Horizontal scroll not implemented yet
@@ -246,7 +248,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
         let lines = self.formatter.format(&diff)?;
 
         self.diff_lines = Some(lines);
-        self.diff_scroll = 0;
+        self.diff_selected_line = 0;
         self.layout = LayoutState::Split { ratio: 50 };
         self.mode = Mode::Diff;
 
