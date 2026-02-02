@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::application::port::DiffFormatter;
 use crate::config::AppConfig;
-use crate::domain::{BlameStack, CommitHash, GitGateway};
+use crate::domain::{BlameStack, CommitHash, CommitInfo, GitGateway};
 use crate::ui::action::{Action, BlameAction, DiffAction, GlobalAction, HelpAction};
 use crate::ui::mode::Mode;
 
@@ -28,6 +28,7 @@ pub struct App<G: GitGateway, F: DiffFormatter> {
     pub mode: Mode,
     pub blame_stack: BlameStack,
     pub diff_lines: Option<Vec<String>>,
+    pub diff_commit_info: Option<CommitInfo>,
 
     // UI state
     pub layout: LayoutState,
@@ -60,6 +61,7 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             mode: Mode::Blame,
             blame_stack,
             diff_lines: None,
+            diff_commit_info: None,
             layout: LayoutState::FullScreen,
             diff_selected_line: 0,
             help_scroll: 0,
@@ -260,10 +262,12 @@ impl<G: GitGateway, F: DiffFormatter> App<G, F> {
             entry.commit_hash.clone()
         };
 
+        let commit_info = self.git.commit_info(&commit_hash)?;
         let diff = self.git.diff(&commit_hash)?;
         let lines = self.formatter.format(&diff)?;
 
         self.diff_lines = Some(lines);
+        self.diff_commit_info = Some(commit_info);
         self.diff_selected_line = 0;
         self.layout = LayoutState::Split { ratio: 50 };
         self.mode = Mode::Diff;

@@ -156,7 +156,7 @@ fn render(
             // Diff view
             if let Some(lines) = &app.diff_lines {
                 diff_state.selected_line = app.diff_selected_line;
-                let diff_view = DiffView::new(lines);
+                let diff_view = DiffView::new(lines, app.diff_commit_info.as_ref());
                 diff_view.render(split.diff, frame.buffer_mut(), diff_state);
             }
         }
