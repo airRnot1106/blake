@@ -55,7 +55,7 @@
         { system, pkgs, ... }:
         {
           default = pkgs.mkShell {
-            inherit (self.checks.${system}.pre-commit-check) shellHook;
+            inherit (self.devHooks.${system}) shellHook;
             packages = with pkgs; [
               (toolchainFor system)
               openssl
@@ -80,6 +80,7 @@
       checks = eachSystem (
         { system, ... }:
         {
+          # For nix flake check - only treefmt (no network access in sandbox)
           pre-commit-check = git-hooks.lib.${system}.run {
             src = ./.;
             hooks = {
@@ -87,12 +88,25 @@
                 enable = true;
                 package = self.formatter.${system};
               };
-              clippy = {
-                enable = true;
-                packageOverrides = {
-                  cargo = toolchainFor system;
-                  clippy = toolchainFor system;
-                };
+            };
+          };
+        }
+      );
+      # For local development - includes clippy (has network access)
+      devHooks = eachSystem (
+        { system, ... }:
+        git-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            treefmt = {
+              enable = true;
+              package = self.formatter.${system};
+            };
+            clippy = {
+              enable = true;
+              packageOverrides = {
+                cargo = toolchainFor system;
+                clippy = toolchainFor system;
               };
             };
           };
