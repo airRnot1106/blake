@@ -17,4 +17,4 @@ toml = "0.9.11"
 which = "8.0.0"
 
 [dev-dependencies]
-proptest = "1.9.0"
+proptest = "1.10.0"
